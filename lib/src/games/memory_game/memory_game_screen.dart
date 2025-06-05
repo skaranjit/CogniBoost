@@ -75,7 +75,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
   String _getIconName(IconData icon) {
     // This map should be expanded to include icons from ALL themes used.
     // For a more scalable solution, consider a central icon registry or more descriptive icon objects.
-    const Map<IconData, String> iconNames = {
+    final Map<IconData, String> iconNames = {
       Icons.star: 'Star', Icons.favorite: 'Heart', Icons.anchor: 'Anchor',
       Icons.bug_report: 'Bug', Icons.camera: 'Camera', Icons.lightbulb: 'Lightbulb',
       Icons.map: 'Map', Icons.pets: 'Pets', Icons.ac_unit: 'Snowflake',

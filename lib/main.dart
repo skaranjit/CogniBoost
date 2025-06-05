@@ -76,7 +76,7 @@ class CogniBoostApp extends StatelessWidget {
             textStyle: customTextTheme.labelLarge,
           ),
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           elevation: 4.0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8.0),

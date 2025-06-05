@@ -1,4 +1,4 @@
-// cogni_boost/lib/screens/game_screen.dart
+// cogni_boost/lib/screens/game_screen_v1.dart
 import 'package:flutter/material.dart';
 import '../models/game_type.dart'; // Import GameType
 import '../models/game_score.dart'; // Import GameScore
