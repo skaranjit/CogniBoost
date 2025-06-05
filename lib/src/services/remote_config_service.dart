@@ -1,38 +1,39 @@
 import 'package:firebase_remote_config/firebase_remote_config.dart';
-import 'dart:convert'; // For decoding JSON strings
+import 'dart:convert';
 
 class RemoteConfigService {
-  // Singleton pattern
   RemoteConfigService._privateConstructor();
   static final RemoteConfigService _instance = RemoteConfigService._privateConstructor();
   static RemoteConfigService get instance => _instance;
 
   final FirebaseRemoteConfig _remoteConfig = FirebaseRemoteConfig.instance;
 
-  // Default values for Remote Config parameters
   final Map<String, dynamic> _defaultConfig = {
     'available_games': jsonEncode([
       {
         'name': 'Memory Game',
         'route': '/memory_game',
         'enabled': true,
-        'params': {'initial_pairs': 6}
+        'params': {'initial_pairs': 6, 'icon_theme': 'classic'}
       },
-      {'name': 'Another Game (Coming Soon)', 'route': '/coming_soon', 'enabled': false}
+      { // New entry for Tap Speed Challenge in the general list
+        'name': 'Tap Speed Challenge',
+        'route': '/tap_speed_challenge', // Needs a route in main.dart
+        'enabled': true,
+        'params': {'duration_seconds': 30, 'target_radius': 25.0, 'target_color': "#0000FF"} // Blue
+      }
     ]),
     'memory_game_default_pairs': 8,
     'seasonal_theme_enabled': false,
-
-    // New default for "Today's Game"
-    'todays_game_config': jsonEncode({
-      "game_id": "default_daily_memory_001",
-      "game_type": "memory_game", // Defaulting to memory_game
-      "display_name": "Default Daily Memory",
-      "description": "A fun memory challenge to start your day!",
+    'todays_game_config': jsonEncode({ // Example: Today's game is Tap Speed Challenge
+      "game_id": "daily_tap_speed_001",
+      "game_type": "tap_speed_challenge",
+      "display_name": "Daily Tap Frenzy",
+      "description": "How fast can you tap today?",
       "config": {
-        "initial_pairs": 7, // Default pairs for the default today's game
-        "icon_theme": "classic"
-        // Add other memory game specific defaults if needed
+        "duration_seconds": 20, // Shorter duration for daily challenge
+        "target_radius": 35.0, // Slightly larger target
+        "target_color": "#FF8C00" // Dark Orange
       }
     })
   };
@@ -40,12 +41,13 @@ class RemoteConfigService {
   bool _isInitialized = false;
 
   Future<void> initialize() async {
+    // ... (initialize method remains the same as previous step)
     if (_isInitialized) return;
     try {
       await _remoteConfig.setDefaults(_defaultConfig);
       await _remoteConfig.setConfigSettings(RemoteConfigSettings(
         fetchTimeout: const Duration(minutes: 1),
-        minimumFetchInterval: const Duration(hours: 1), // For production, consider a longer interval or on app start
+        minimumFetchInterval: const Duration(hours: 1),
       ));
       await _fetchAndActivate();
       _isInitialized = true;
@@ -53,7 +55,6 @@ class RemoteConfigService {
       _remoteConfig.onConfigUpdated.listen((event) async {
         print('Remote config updated, activating...');
         await _remoteConfig.activate();
-        // Consider adding a stream/notifier here if parts of the app need to react live to config updates
       });
     } catch (e) {
       print('Error initializing RemoteConfigService: $e');
@@ -61,6 +62,7 @@ class RemoteConfigService {
   }
 
   Future<void> _fetchAndActivate() async {
+    // ... (_fetchAndActivate method remains the same)
     try {
       print('Fetching remote config...');
       await _remoteConfig.fetch();
@@ -75,12 +77,9 @@ class RemoteConfigService {
     }
   }
 
-  // --- Getter methods for specific config values ---
-
   List<Map<String, dynamic>> getAvailableGames() {
-    // (Implementation from previous step)
+    // ... (getAvailableGames method remains the same)
     if (!_isInitialized) {
-      print("Warning: Accessing Remote Config before initialization. Returning default games list from local defaults.");
       try { return (jsonDecode(_defaultConfig['available_games'] as String) as List).map((item) => item as Map<String, dynamic>).toList(); }
       catch (e) { print("Error parsing default available_games: $e"); return []; }
     }
@@ -92,11 +91,29 @@ class RemoteConfigService {
       }
     } catch (e) {
       print('Error parsing available_games from Remote Config: $e.');
-    } // Fallback to local default if parsing fails or key not found
+    }
     return (jsonDecode(_defaultConfig['available_games'] as String) as List).map((item) => item as Map<String, dynamic>).toList();
   }
 
-  bool isSeasonalThemeEnabled() {
+  Map<String, dynamic>? getTodaysGameConfig() {
+    // ... (getTodaysGameConfig method remains the same)
+    String jsonString;
+    if (!_isInitialized) {
+      jsonString = _defaultConfig['todays_game_config'] as String;
+    } else {
+      jsonString = _remoteConfig.getString('todays_game_config');
+      if (jsonString.isEmpty) {
+        jsonString = _defaultConfig['todays_game_config'] as String;
+      }
+    }
+    try {
+      if (jsonString.isNotEmpty) { return jsonDecode(jsonString) as Map<String, dynamic>; }
+    } catch (e) { print("Error parsing Today's Game JSON: $e. JSON String was: '$jsonString'");}
+    return null;
+  }
+
+  // Other getters (isSeasonalThemeEnabled, getGlobalMemoryGameDefaultPairs, getGameConfig) remain the same
+   bool isSeasonalThemeEnabled() {
     if (!_isInitialized) return _defaultConfig['seasonal_theme_enabled'] as bool;
     return _remoteConfig.getBool('seasonal_theme_enabled');
   }
@@ -107,35 +124,8 @@ class RemoteConfigService {
   }
 
   Map<String, dynamic>? getGameConfig(String gameRoute) {
-    // (Implementation from previous step)
     final games = getAvailableGames();
     try { return games.firstWhere((game) => game['route'] == gameRoute); }
     catch (e) { return null; }
-  }
-
-  // New getter for Today's Game configuration
-  Map<String, dynamic>? getTodaysGameConfig() {
-    String jsonString;
-    if (!_isInitialized) {
-      print("Warning: Accessing Remote Config before initialization for Today's Game. Returning local default.");
-      jsonString = _defaultConfig['todays_game_config'] as String;
-    } else {
-      jsonString = _remoteConfig.getString('todays_game_config');
-      // If fetched string is empty or not found, fallback to local default string
-      if (jsonString.isEmpty) {
-        print("Today's Game config is empty in Remote Config, falling back to local default.");
-        jsonString = _defaultConfig['todays_game_config'] as String;
-      }
-    }
-
-    try {
-      if (jsonString.isNotEmpty) {
-        return jsonDecode(jsonString) as Map<String, dynamic>;
-      }
-    } catch (e) {
-      print("Error parsing Today's Game JSON: $e. JSON String was: '$jsonString'");
-    }
-    // Fallback if everything else fails (e.g. default was also bad, though unlikely here)
-    return null;
   }
 }

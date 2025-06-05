@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 import '../../services/remote_config_service.dart';
 import '../../games/memory_game/memory_game_screen.dart';
+import '../../games/tap_speed_challenge/tap_speed_game_screen.dart'; // Import TapSpeedGameScreen
 
-// Game Widget Factory / Renderer (from previous step - assumed to be correct)
+// Game Widget Factory / Renderer
 Widget _getGameWidget(BuildContext context, String gameType, Map<String, dynamic> config) {
   print("Attempting to render game type: '$gameType' with config: $config");
+
   switch (gameType.toLowerCase()) {
     case 'memory_game':
       return MemoryGameScreen(gameParams: config);
+
+    case 'tap_speed_challenge': // New case for Tap Speed Challenge
+      return TapSpeedGameScreen(gameParams: config);
+
     default:
-      return Container( /* ... (unsupported game type UI from previous step) ... */
+      return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.grey.shade200,
@@ -30,6 +36,10 @@ Widget _getGameWidget(BuildContext context, String gameType, Map<String, dynamic
   }
 }
 
+// ... (Rest of TodaysGameScreen remains the same)
+// For brevity, only the updated _getGameWidget is shown.
+// The rest of the TodaysGameScreen class (StatefulWidget, _loadTodaysGame, build, _buildContent)
+// is assumed to be present from the previous step.
 
 class TodaysGameScreen extends StatefulWidget {
   const TodaysGameScreen({super.key});
@@ -54,7 +64,7 @@ class _TodaysGameScreenState extends State<TodaysGameScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
-      _todaysGameConfig = null; // Clear previous config before loading
+      _todaysGameConfig = null;
     });
 
     try {
@@ -64,27 +74,17 @@ class _TodaysGameScreenState extends State<TodaysGameScreen> {
       if (config == null || config.isEmpty) {
         _errorMessage = "No game challenge available for today. Please check back later!";
       } else {
-        // Validate essential fields
         final gameType = config['game_type'] as String?;
         final displayName = config['display_name'] as String?;
-        final gameSpecificConfig = config['config']; // Can be any type, will be checked later
+        final gameSpecificConfig = config['config'];
 
         if (gameType == null || gameType.isEmpty) {
           _errorMessage = "Today's game configuration is invalid (missing 'game_type').";
         } else if (displayName == null || displayName.isEmpty) {
           _errorMessage = "Today's game configuration is invalid (missing 'display_name').";
-        } else if (gameSpecificConfig == null || gameSpecificConfig is! Map<String, dynamic>) {
-           // Ensure 'config' is a map if it exists, or allow it to be null if not needed by game_type
-           // Some game_types might not need a 'config' block.
-           // For this example, we assume if 'config' exists, it must be a map.
-           // If a game_type needs 'config' and it's not a map, _getGameWidget should handle it or it's an error.
-           if (gameSpecificConfig != null && gameSpecificConfig is! Map<String,dynamic>) {
+        } else if (gameSpecificConfig != null && gameSpecificConfig is! Map<String,dynamic>) {
              _errorMessage = "Today's game configuration is invalid ('config' is not structured correctly).";
-           } else {
-             _todaysGameConfig = config; // Config seems structurally okay for the screen
-           }
-        }
-        else {
+        } else {
           _todaysGameConfig = config;
         }
       }
@@ -131,7 +131,7 @@ class _TodaysGameScreenState extends State<TodaysGameScreen> {
     }
 
     if (_errorMessage != null) {
-      return Padding(
+      return Padding( /* ... Error UI ... */
         padding: const EdgeInsets.all(20.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -139,78 +139,45 @@ class _TodaysGameScreenState extends State<TodaysGameScreen> {
           children: [
              Icon(Icons.error_outline, color: Colors.red.shade400, size: 70),
              const SizedBox(height: 20),
-            Text(
-              "Oops! Something went wrong.",
-              style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
+            Text("Oops! Something went wrong.", style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold), textAlign: TextAlign.center,),
             const SizedBox(height: 10),
-            Text(
-              _errorMessage!,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleMedium,
-            ),
+            Text(_errorMessage!, textAlign: TextAlign.center, style: theme.textTheme.titleMedium,),
             const SizedBox(height: 30),
-            ElevatedButton.icon(
-                icon: const Icon(Icons.refresh),
-                label: const Text("Try Again"),
-                onPressed: _loadTodaysGame,
-            )
+            ElevatedButton.icon(icon: const Icon(Icons.refresh), label: const Text("Try Again"), onPressed: _loadTodaysGame,)
           ],
         ),
       );
     }
 
-    if (_todaysGameConfig == null) { // Should be caught by _errorMessage, but as a safeguard
-      return Padding(
+    if (_todaysGameConfig == null) {
+      return Padding( /* ... No game data UI ... */
         padding: const EdgeInsets.all(16.0),
-        child: Text(
-          "No game data loaded. Try refreshing.",
-          textAlign: TextAlign.center,
-          style: theme.textTheme.headlineSmall,
-        ),
+        child: Text("No game data loaded. Try refreshing.", textAlign: TextAlign.center,style: theme.textTheme.headlineSmall,),
       );
     }
 
-    // These are now validated to exist in _loadTodaysGame if _errorMessage is null
     final String gameType = _todaysGameConfig!['game_type'] as String;
     final String displayName = _todaysGameConfig!['display_name'] as String;
     final String description = _todaysGameConfig!['description'] as String? ?? 'No specific description for this challenge.';
-    // Ensure config is a map, default to empty if null (game widget should handle missing params)
     final Map<String, dynamic> gameSpecificConfig = _todaysGameConfig!['config'] as Map<String, dynamic>? ?? {};
 
-
-    return Padding(
+    return Padding( /* ... Game display UI ... */
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text( // Display name is already in AppBar, kept here for consistency if design changes
-            displayName,
-            style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
-            textAlign: TextAlign.center,
-          ),
+          Text(displayName, style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary), textAlign: TextAlign.center,),
           const SizedBox(height: 8),
-          Text(
-            description,
-            style: theme.textTheme.titleMedium?.copyWith(fontStyle: FontStyle.italic),
-            textAlign: TextAlign.center,
-          ),
+          Text(description, style: theme.textTheme.titleMedium?.copyWith(fontStyle: FontStyle.italic), textAlign: TextAlign.center,),
           const SizedBox(height: 15),
           const Divider(thickness: 1),
           const SizedBox(height: 15),
-          Expanded(
-            child: _getGameWidget(context, gameType, gameSpecificConfig),
-          ),
+          Expanded(child: _getGameWidget(context, gameType, gameSpecificConfig), ),
           const SizedBox(height: 10),
           const Divider(thickness: 1),
           Padding(
             padding: const EdgeInsets.only(top: 8.0),
-            child: Text(
-              "Game ID: ${_todaysGameConfig!['game_id'] ?? 'N/A'} | Type: $gameType",
-              style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
-              textAlign: TextAlign.center,
-            ),
+            child: Text("Game ID: ${_todaysGameConfig!['game_id'] ?? 'N/A'} | Type: $gameType", style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey.shade600), textAlign: TextAlign.center,),
           ),
         ],
       ),
