@@ -1,45 +1,61 @@
-// cogni_boost/lib/main.dart
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart'; // Import
-import 'screens/splash_screen.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'src/models/game_stat_model.dart';
+import 'src/main_menu/main_menu_screen.dart';
+import 'src/settings_screen/settings_screen.dart';
+import 'src/level_selection/level_selection_screen.dart';
+import 'src/games/memory_game/memory_game_screen.dart';
+import 'src/performance_dashboard/performance_dashboard_screen.dart'; // New import
 
-void main() {
+const String gameStatsBoxName = 'gameStatsBox';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  MobileAds.instance.initialize(); // Initialize AdMob
-  runApp(MyApp());
+  await Hive.initFlutter();
+  Hive.registerAdapter(GameStatModelAdapter());
+  await Hive.openBox<GameStatModel>(gameStatsBoxName);
+  runApp(const CogniBoostApp());
 }
 
-class MyApp extends StatelessWidget {
+class CogniBoostApp extends StatelessWidget {
+  const CogniBoostApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'CogniBoost',
+      title: 'CogniBoost App',
       theme: ThemeData(
-        primarySwatch: Colors.blueGrey, // Or another Colors.xxx swatch
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey, secondary: Colors.orangeAccent),
-        useMaterial3: true, // Optional: Use Material 3 theming
+        primarySwatch: Colors.blueGrey,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+        scaffoldBackgroundColor: Colors.grey.shade100,
         appBarTheme: AppBarTheme(
-          backgroundColor: Colors.blueGrey[700],
+          backgroundColor: Colors.blueGrey.shade700,
           foregroundColor: Colors.white,
-          elevation: 2,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orangeAccent,
-            foregroundColor: Colors.black87,
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            textStyle: TextStyle(fontSize: 16),
+            backgroundColor: Colors.blueGrey.shade600,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            textStyle: const TextStyle(fontSize: 16),
           ),
         ),
+        cardTheme: CardTheme(
+          elevation: 4.0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8.0),
+          ),
+          color: Colors.white,
+        ),
       ),
-      home: SplashScreen(), // Start with SplashScreen
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const MainMenuScreen(),
+        '/settings': (context) => const SettingsScreen(),
+        '/levels': (context) => const LevelSelectionScreen(),
+        '/memory_game': (context) => const MemoryGameScreen(),
+        '/dashboard': (context) => const PerformanceDashboardScreen(), // New route
+      },
     );
   }
-
-
 }
