@@ -6,7 +6,7 @@ import '../services/ad_helper.dart';
 import '../services/score_service.dart'; // Import ScoreService
 import '../games/sequence_recall_game.dart';
 import '../games/tap_the_target_game.dart';
-import '../games/pattern_recognition_game.dart'; // New import
+import '../games/pattern_recognition_game.dart';
 
 class GameScreen extends StatefulWidget {
   final List<GameType> dailyChallengeGames;

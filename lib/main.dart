@@ -1,5 +1,7 @@
+import 'package:cogni_boost/src/screens/stats_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart'; // Import Google Fonts
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -23,6 +25,7 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await MobileAds.instance.initialize();
   await RemoteConfigService.instance.initialize();
   await Hive.initFlutter();
   if (!Hive.isAdapterRegistered(GameStatModelAdapter().typeId)) { // Check before registering
@@ -96,6 +99,7 @@ class CogniBoostApp extends StatelessWidget {
             appBar: AppBar(title: const Text('Coming Soon')), // Will use themed text
             body: const Center(child: Text('This game is coming soon!'))), // Will use themed text
         '/todays_game': (context) => const TodaysGameScreen(),
+        '/stats': (context) => StatsScreen(),
       },
       onGenerateRoute: (settings) {
         switch (settings.name) {

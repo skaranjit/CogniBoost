@@ -1,7 +1,9 @@
 // cogni_boost/lib/screens/profile_screen.dart
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart'; // Import AdWidget
-import '../services/ad_helper.dart'; // Import AdHelper
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+
+import '../services/ad_helper.dart';
+
 
 class ProfileScreen extends StatefulWidget { // Changed to StatefulWidget
   @override

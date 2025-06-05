@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../services/ad_helper.dart';
 import '../services/remote_config_service.dart';
 
 class MainMenuScreen extends StatefulWidget {
@@ -10,11 +12,32 @@ class MainMenuScreen extends StatefulWidget {
 
 class _MainMenuScreenState extends State<MainMenuScreen> {
   List<Map<String, dynamic>> _availableGames = [];
+  AdHelper? _adHelper;
+  BannerAd? _bannerAd;
+  bool _isBannerAdLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _loadGames();
+    _adHelper = AdHelper();
+    _bannerAd = _adHelper!.createBannerAd(
+        adSize: AdSize.banner,
+        onAdLoaded: (Ad ad) {
+          if(mounted){
+            setState(() {
+              _bannerAd = ad as BannerAd;
+              _isBannerAdLoaded = true;
+            });
+          }
+        },
+        onAdFailedToLoad: (LoadAdError error) {
+          print('Banner ad failed to load: $error');
+          _bannerAd?.dispose();
+          _bannerAd = null;
+          // No need to setState for _isBannerAdLoaded as it's already false
+        }
+    );
   }
 
   void _loadGames() {
@@ -39,6 +62,14 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     // ... other games
   ]
   */
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    // _adHelper?.dispose(); // AdHelper's dispose is for its own interstitial/rewarded ads
+    super.dispose();
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +144,19 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: ElevatedButton(
+                  style: theme.elevatedButtonTheme.style?.copyWith(
+                    padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
+                    backgroundColor: MaterialStateProperty.all(theme.colorScheme.secondary.withOpacity(0.8)),
+                  ),
+                  child: const Text('View Stats'),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/stats');
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: ElevatedButton(
                    style: theme.elevatedButtonTheme.style?.copyWith(
                       padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
                       backgroundColor: MaterialStateProperty.all(theme.colorScheme.secondary.withOpacity(0.8)),
@@ -123,6 +167,13 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                   },
                 ),
               ),
+              if (_isBannerAdLoaded && _bannerAd != null)
+                Container(
+                  alignment: Alignment.center,
+                  width: _bannerAd!.size.width.toDouble(),
+                  height: _bannerAd!.size.height.toDouble(),
+                  child: AdWidget(ad: _bannerAd!),
+                ),
             ],
           ),
         ),

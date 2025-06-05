@@ -1,12 +1,13 @@
 // cogni_boost/lib/screens/stats_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart'; // Import AdWidget
-import '../services/ad_helper.dart';
-import '../services/score_service.dart';
+
+import 'package:intl/intl.dart';
 import '../models/game_score.dart';
 import '../models/game_type.dart';
-import 'package:intl/intl.dart';
-import '../utils/string_extensions.dart';
+import '../services/ad_helper.dart';
+import '../../utils/string_extensions.dart';
+import '../services/score_service.dart';
 
 class StatsScreen extends StatefulWidget {
   @override

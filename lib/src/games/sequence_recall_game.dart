@@ -2,14 +2,14 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
-import '../../services/ad_helper.dart';
-import '../../services/score_service.dart'; // Import ScoreService
+import '../services/ad_helper.dart';
+import '../services/score_service.dart';
 
 class SequenceRecallGame extends StatefulWidget {
   final Function(int score)? onGameCompleted;
   final Function()? onGameFlowFinished; // New callback
 
-  SequenceRecallGame({Key? key, this.onGameCompleted, this.onGameFlowFinished}) : super(key: key);
+  const SequenceRecallGame({Key? key, this.onGameCompleted, this.onGameFlowFinished}) : super(key: key);
   @override
   _SequenceRecallGameState createState() => _SequenceRecallGameState();
 }

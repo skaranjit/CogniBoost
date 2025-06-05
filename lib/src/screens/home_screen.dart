@@ -1,13 +1,13 @@
 // cogni_boost/lib/screens/home_screen.dart
+import 'package:cogni_boost/src/screens/stats_screen.dart';
 import 'package:flutter/material.dart';
 import '../games/sequence_recall_game.dart';
 import '../games/tap_the_target_game.dart';
+import '../services/ad_helper.dart';
 import '../services/score_service.dart';
-import 'stats_screen.dart';
 import 'profile_screen.dart';
 import 'game_screen.dart';
 import '../models/game_type.dart';
-import '../services/ad_helper.dart'; // Import AdHelper
 import '../games/pattern_recognition_game.dart'; // New import
 
 class HomeScreen extends StatefulWidget { // Changed to StatefulWidget
