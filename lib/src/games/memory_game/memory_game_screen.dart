@@ -6,11 +6,10 @@ import '../../models/memory_card_model.dart';
 import '../../models/game_stat_model.dart';
 import 'memory_game_logic.dart';
 import '../../../main.dart'; // For gameStatsBoxName
-import '../../services/remote_config_service.dart'; // Import RemoteConfigService
+import '../../services/remote_config_service.dart';
 
 class MemoryGameScreen extends StatefulWidget {
-  // Optional: Allow passing game-specific params, e.g., from MainMenuScreen
-  final Map<String, dynamic>? gameParams;
+  final Map<String, dynamic>? gameParams; // From Remote Config's "config" field for the game
 
   const MemoryGameScreen({super.key, this.gameParams});
 
@@ -25,9 +24,11 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
   int _pairsFound = 0;
   int _numberOfTries = 0;
   int _score = 0;
-  final int _pointsPerMatch = 100;
-  final int _penaltyPerMiss = 10;
-  int _actualNumberOfPairs = 8; // Local default
+  final int _pointsPerMatch = 100; // Could also be made configurable
+  final int _penaltyPerMiss = 10;  // Could also be made configurable
+
+  int _actualNumberOfPairs = 8; // Final fallback default
+  String _actualIconTheme = 'classic'; // Final fallback default
 
   late Box<GameStatModel> _gameStatsBox;
 
@@ -40,21 +41,24 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
 
   void _configureAndInitializeGame() {
     // Determine number of pairs:
-    // 1. Check widget.gameParams (passed via navigation)
-    // 2. Fallback to global Remote Config default for memory game
-    // 3. Fallback to local hardcoded default
-    int initialPairs = widget.gameParams?['initial_pairs'] as int? ??
-                       RemoteConfigService.instance.getGlobalMemoryGameDefaultPairs();
+    // Priority: widget.gameParams -> global Remote Config -> hardcoded default
+    int initialPairsConfig = widget.gameParams?['initial_pairs'] as int? ??
+                             RemoteConfigService.instance.getGlobalMemoryGameDefaultPairs();
+    _actualNumberOfPairs = initialPairsConfig.clamp(2, 10); // Clamp for sanity; max depends on available icons
 
-    // Ensure it's a reasonable value, e.g., not less than 2, not more than available icons
-    _actualNumberOfPairs = initialPairs.clamp(2, 10); // Clamp between 2 and 10 pairs for this example. Adjust as needed.
+    // Determine icon theme:
+    // Priority: widget.gameParams -> hardcoded default
+    _actualIconTheme = widget.gameParams?['icon_theme'] as String? ?? 'classic';
 
-    print("Memory Game: Initializing with $_actualNumberOfPairs pairs.");
+    print("Memory Game Screen: Initializing with $_actualNumberOfPairs pairs, theme '$_actualIconTheme'.");
     _initializeGame();
   }
 
   void _initializeGame() {
-    _cards = getInitialCards(numberOfPairs: _actualNumberOfPairs); // Use fetched/defaulted number of pairs
+    _cards = getInitialCards(
+      numberOfPairs: _actualNumberOfPairs,
+      iconTheme: _actualIconTheme,
+    );
     _previouslyFlippedCard = null;
     _isProcessingTap = false;
     _pairsFound = 0;
@@ -64,33 +68,35 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
       card.isFaceUp = false;
       card.isMatched = false;
     }
+    // Ensure UI rebuilds if _cards list is empty initially (e.g. 0 pairs configured)
     Future.microtask(() => setState(() {}));
   }
 
-  // ... (rest of _buildCard, _handleCardTap, _saveGameResult, _showGameEndDialog, build method remain largely the same)
-  // Ensure _getIconName in _buildCard can handle all icons from _availableIcons in memory_game_logic.dart
-  // For brevity, only showing relevant changes. Assume other methods are present from previous steps.
-
   String _getIconName(IconData icon) {
-    // Basic mapping for semantics. More robust mapping might be needed for more icons.
-    if (icon == Icons.star) return 'Star';
-    if (icon == Icons.favorite) return 'Heart';
-    if (icon == Icons.anchor) return 'Anchor';
-    if (icon == Icons.bug_report) return 'Bug';
-    if (icon == Icons.camera) return 'Camera';
-    if (icon == Icons.lightbulb) return 'Lightbulb';
-    if (icon == Icons.map) return 'Map';
-    if (icon == Icons.pets) return 'Pets';
-    if (icon == Icons.ac_unit) return 'Snowflake';
-    if (icon == Icons.access_alarm) return 'Alarm Clock';
-    if (icon == Icons.account_balance) return 'Bank';
-    if (icon == Icons.adb) return 'Android Bug';
-    if (icon == Icons.airplanemode_active) return 'Airplane';
-    if (icon == Icons.all_inclusive) return 'Infinity';
-    if (icon == Icons.assessment) return 'Chart';
-    if (icon == Icons.attach_money) return 'Money';
-    return 'Icon'; // Default
+    // This map should be expanded to include icons from ALL themes used.
+    // For a more scalable solution, consider a central icon registry or more descriptive icon objects.
+    const Map<IconData, String> iconNames = {
+      Icons.star: 'Star', Icons.favorite: 'Heart', Icons.anchor: 'Anchor',
+      Icons.bug_report: 'Bug', Icons.camera: 'Camera', Icons.lightbulb: 'Lightbulb',
+      Icons.map: 'Map', Icons.pets: 'Pets', Icons.ac_unit: 'Snowflake',
+      Icons.access_alarm: 'Alarm Clock', Icons.account_balance: 'Bank', Icons.adb: 'Android Bug',
+      Icons.airplanemode_active: 'Airplane', Icons.all_inclusive: 'Infinity',
+      Icons.assessment: 'Chart', Icons.attach_money: 'Money',
+      // Nature Theme Icons (example)
+      Icons.eco: 'Eco Leaf', Icons.filter_vintage: 'Vintage Flower', Icons.flare: 'Sun Flare',
+      Icons.forest: 'Forest', Icons.grass: 'Grass', Icons.landscape: 'Landscape',
+      Icons.local_florist: 'Flower', Icons.park: 'Park Bench', Icons.terrain: 'Mountains',
+      Icons.wb_sunny: 'Sun', Icons.waves: 'Waves', Icons.wb_cloudy: 'Cloudy',
+      Icons.night_shelter: 'Shelter', Icons.self_improvement: 'Meditation',
+      Icons.spa: 'Spa Stones', Icons.volcano: 'Volcano',
+    };
+    return iconNames[icon] ?? 'Icon';
   }
+
+  // _buildCard, _handleCardTap, _saveGameResult, _showGameEndDialog remain the same as previous step
+  // ... (Assume these methods are present and correct from previous versions) ...
+  // For brevity, not repeating them here. The key change is in _configureAndInitializeGame and
+  // ensuring _getIconName is comprehensive if multiple themes are actively used.
 
   Widget _buildCard(BuildContext context, int index) {
     final card = _cards[index];
@@ -185,7 +191,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
 
   Future<void> _saveGameResult() async {
     final gameStat = GameStatModel(
-      gameName: 'MemoryGame', // Could also be made dynamic via widget.gameParams
+      gameName: 'MemoryGame - Theme: $_actualIconTheme', // Example: include theme in saved name
       score: _score,
       tries: _numberOfTries,
       timestamp: DateTime.now(),
@@ -206,14 +212,14 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
               child: const Text('Play Again'),
               onPressed: () {
                 Navigator.of(context).pop();
-                _configureAndInitializeGame(); // Re-configure and re-initialize
+                _configureAndInitializeGame();
               },
             ),
             TextButton(
               child: const Text('Main Menu'),
               onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // Close dialog
+                Navigator.of(context).pop(); // Pop game screen
               },
             ),
           ],
@@ -225,26 +231,37 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    if (_cards.isEmpty) { // Handle case where cards are not yet initialized or 0 pairs
+    if (_cards.isEmpty && _actualNumberOfPairs > 0) { // Show loading if cards are expected but not ready
         return Scaffold(
-            appBar: AppBar(title: const Text('Memory Game')),
+            appBar: AppBar(title: Text('Memory Game - $_actualNumberOfPairs Pairs')),
             body: const Center(child: CircularProgressIndicator())
         );
     }
+     if (_actualNumberOfPairs <= 0) { // Handle case where 0 pairs are configured
+        return Scaffold(
+            appBar: AppBar(title: const Text('Memory Game')),
+            body: Center(
+                child: Text(
+                    "No cards to display.\nPlease check game configuration.",
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium
+                )
+            )
+        );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Memory Game - $_actualNumberOfPairs Pairs'), // Dynamic title
+        title: Text('Memory Game - $_actualNumberOfPairs Pairs ($_actualIconTheme)'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _configureAndInitializeGame, // Refresh uses new config method
+            onPressed: _configureAndInitializeGame,
             tooltip: 'Restart Game',
           )
         ],
       ),
       body: Column(
-        // ... (rest of the UI from previous step, e.g., score display, GridView)
-        // Ensure GridView crossAxisCount is appropriate for potentially more/fewer cards
          children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -261,8 +278,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
             child: GridView.builder(
               padding: const EdgeInsets.all(12.0),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                // Adjust crossAxisCount based on _actualNumberOfPairs or screen size
-                crossAxisCount: (_actualNumberOfPairs <= 6) ? 3 : 4, // Example adjustment
+                crossAxisCount: (_actualNumberOfPairs <= 6) ? 3 : ((_actualNumberOfPairs <= 12) ? 4 : 5), // Example adjustment
                 crossAxisSpacing: 8.0,
                 mainAxisSpacing: 8.0,
                 childAspectRatio: 1.0,

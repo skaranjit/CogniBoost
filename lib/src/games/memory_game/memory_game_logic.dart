@@ -1,35 +1,49 @@
 import 'package:flutter/material.dart';
 import '../../models/memory_card_model.dart';
 
-// Base list of icons available for cards. Ensure enough unique icons for max pairs.
-final List<IconData> _availableIcons = [
-  Icons.star, Icons.favorite, Icons.anchor, Icons.bug_report,
-  Icons.camera, Icons.lightbulb, Icons.map, Icons.pets,
-  Icons.ac_unit, Icons.access_alarm, Icons.account_balance, Icons.adb,
-  Icons.airplanemode_active, Icons.all_inclusive, Icons.assessment, Icons.attach_money,
-  // Add more unique icons if you expect to configure more than 16 pairs
-];
+// Base list of icons available for cards.
+final Map<String, List<IconData>> _iconThemes = {
+  'classic': [
+    Icons.star, Icons.favorite, Icons.anchor, Icons.bug_report,
+    Icons.camera, Icons.lightbulb, Icons.map, Icons.pets,
+    Icons.ac_unit, Icons.access_alarm, Icons.account_balance, Icons.adb,
+    Icons.airplanemode_active, Icons.all_inclusive, Icons.assessment, Icons.attach_money,
+  ],
+  'nature': [ // Example of another theme
+    Icons.eco, Icons.filter_vintage, Icons.flare, Icons.forest,
+    Icons.grass, Icons.landscape, Icons.local_florist, Icons.park,
+    Icons.terrain, Icons.wb_sunny, Icons.waves, Icons.wb_cloudy,
+    Icons.night_shelter, Icons.self_improvement, Icons.spa, Icons.volcano,
+  ],
+  // Add more themes as needed
+};
 
-List<MemoryCardModel> getInitialCards({required int numberOfPairs}) {
+List<MemoryCardModel> getInitialCards({
+  required int numberOfPairs,
+  String iconTheme = 'classic', // Default to 'classic' theme
+}) {
+  print("Memory Game Logic: Generating cards with $numberOfPairs pairs using theme '$iconTheme'.");
+
+  List<IconData> selectedIconPack = _iconThemes[iconTheme] ?? _iconThemes['classic']!;
+
   if (numberOfPairs <= 0) {
     return [];
   }
-  if (numberOfPairs > _availableIcons.length) {
-    print("Warning: Requested $numberOfPairs pairs, but only ${_availableIcons.length} unique icons available. Clamping to max available.");
-    numberOfPairs = _availableIcons.length;
+  if (numberOfPairs > selectedIconPack.length) {
+    print("Warning: Requested $numberOfPairs pairs for theme '$iconTheme', but only ${selectedIconPack.length} unique icons available. Clamping to max available.");
+    numberOfPairs = selectedIconPack.length;
   }
 
-  // Take a subset of available icons based on numberOfPairs
-  List<IconData> cardIcons = List<IconData>.from(_availableIcons.take(numberOfPairs));
+  List<IconData> cardIcons = List<IconData>.from(selectedIconPack.take(numberOfPairs));
 
   List<MemoryCardModel> cards = [];
   int idCounter = 0;
 
   for (var icon in cardIcons) {
     cards.add(MemoryCardModel(id: idCounter++, icon: icon));
-    cards.add(MemoryCardModel(id: idCounter++, icon: icon)); // Add the pair
+    cards.add(MemoryCardModel(id: idCounter++, icon: icon));
   }
 
-  cards.shuffle(); // Shuffle the cards
+  cards.shuffle();
   return cards;
 }

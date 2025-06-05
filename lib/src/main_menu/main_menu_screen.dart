@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/remote_config_service.dart'; // Import the service
+import '../services/remote_config_service.dart';
 
 class MainMenuScreen extends StatefulWidget {
   const MainMenuScreen({super.key});
@@ -15,15 +15,13 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
   void initState() {
     super.initState();
     _loadGames();
-    // Optional: If RemoteConfigService has a way to notify listeners of updates,
-    // subscribe here and call _loadGames() again.
-    // For now, we assume config is fetched by the time this screen loads.
   }
 
   void _loadGames() {
     final games = RemoteConfigService.instance.getAvailableGames();
     if (mounted) {
       setState(() {
+        // Filter for games explicitly marked as enabled in the general list
         _availableGames = games.where((game) => game['enabled'] == true).toList();
       });
     }
@@ -33,24 +31,12 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
   Expected JSON structure for 'available_games' in Firebase Remote Config:
   [
     {
-      "name": "Memory Game",    // Display name of the game
-      "route": "/memory_game",  // Flutter route for the game
-      "enabled": true,          // Whether the game is currently active
-      "params": {               // Optional game-specific parameters
-        "pairs": 8              // e.g., default number of pairs for memory game
-      }
+      "name": "Memory Game",
+      "route": "/memory_game",
+      "enabled": true,
+      "params": { "initial_pairs": 8, "icon_theme": "classic" }
     },
-    {
-      "name": "Puzzle Game",
-      "route": "/puzzle_game",  // Ensure this route is defined in main.dart if enabled
-      "enabled": false,
-      "description": "A new challenging puzzle!" // Example of another custom field
-    },
-    {
-      "name": "Coming Soon Game",
-      "route": "/coming_soon",
-      "enabled": true
-    }
+    // ... other games
   ]
   */
 
@@ -59,17 +45,35 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('CogniBoost - Main Menu'),
+        title: const Text('CogniBoost'), // Simplified title
       ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch, // Make buttons stretch
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              if (_availableGames.isEmpty)
-                const Center(child: CircularProgressIndicator()), // Show loading or if no games enabled
+              // Prominent button for Today's Game
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary, // Use primary color for emphasis
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                child: const Text("🌟 Today's Challenge 🌟"),
+                onPressed: () {
+                  Navigator.pushNamed(context, '/todays_game');
+                },
+              ),
+              const SizedBox(height: 30),
+
+              // Dynamically loaded general game list (if any enabled)
+              if (_availableGames.isEmpty && RemoteConfigService.instance.getAvailableGames().isNotEmpty)
+                 const Center(child: Text("Loading other games...", style: TextStyle(color: Colors.grey))),
+              if (_availableGames.isEmpty && RemoteConfigService.instance.getAvailableGames().isEmpty)
+                 const Center(child: Text("No other games configured yet.", style: TextStyle(color: Colors.grey))),
+
 
               ..._availableGames.map((game) {
                 return Padding(
@@ -78,37 +82,28 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                     style: theme.elevatedButtonTheme.style?.copyWith(
                       padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
                     ),
+                    // Pass game params if the route expects them directly (e.g. for specific MemoryGame instances)
+                    // For MemoryGameScreen, it's already set up to receive 'gameParams'
+                    onPressed: () => Navigator.pushNamed(
+                      context,
+                      game['route'] as String,
+                      arguments: game['params'] as Map<String,dynamic>?, // Pass params as arguments
+                    ),
                     child: Text(game['name'] as String? ?? 'Unnamed Game'),
-                    onPressed: () {
-                      final route = game['route'] as String?;
-                      if (route != null && route.isNotEmpty) {
-                        // Check if route exists before navigating (optional but good practice)
-                        // This basic check assumes routes are well-defined in main.dart
-                        if (ModalRoute.of(context)?.settings.name != route) {
-                           Navigator.pushNamed(context, route);
-                        } else {
-                           print("Already on route: $route");
-                        }
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('This game is not configured correctly.')),
-                        );
-                      }
-                    },
                   ),
                 );
               }).toList(),
 
-              const SizedBox(height: 30), // Spacer
+              const Spacer(), // Pushes static buttons to the bottom if list is short
 
-              // Static buttons (Progress, Settings) can remain or also be made dynamic
+              // Static buttons
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: ElevatedButton(
                   style: theme.elevatedButtonTheme.style?.copyWith(
-                      padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
-                       backgroundColor: MaterialStateProperty.all(theme.colorScheme.secondary),
-                    ),
+                    padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
+                    backgroundColor: MaterialStateProperty.all(theme.colorScheme.secondary.withOpacity(0.8)),
+                  ),
                   child: const Text('View Progress'),
                   onPressed: () {
                     Navigator.pushNamed(context, '/dashboard');
@@ -120,7 +115,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                 child: ElevatedButton(
                    style: theme.elevatedButtonTheme.style?.copyWith(
                       padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
-                      backgroundColor: MaterialStateProperty.all(theme.colorScheme.secondary),
+                      backgroundColor: MaterialStateProperty.all(theme.colorScheme.secondary.withOpacity(0.8)),
                     ),
                   child: const Text('Settings'),
                   onPressed: () {
@@ -128,18 +123,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                   },
                 ),
               ),
-              // The "Level Selection" button might become obsolete or change
-              // if levels are part of individual game configurations.
-              // For now, I'll comment it out as its role is less clear with dynamic games.
-              /*
-              const SizedBox(height: 20),
-              ElevatedButton(
-                child: const Text('Level Selection'),
-                onPressed: () {
-                  Navigator.pushNamed(context, '/levels');
-                },
-              ),
-              */
             ],
           ),
         ),

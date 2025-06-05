@@ -13,17 +13,28 @@ class RemoteConfigService {
   final Map<String, dynamic> _defaultConfig = {
     'available_games': jsonEncode([
       {
-        'name': 'Memory Game', // Updated default name slightly for clarity
+        'name': 'Memory Game',
         'route': '/memory_game',
         'enabled': true,
-        // Nested 'params' for game-specific configurations
-        'params': {'initial_pairs': 6} // Default initial pairs for this game instance
+        'params': {'initial_pairs': 6}
       },
       {'name': 'Another Game (Coming Soon)', 'route': '/coming_soon', 'enabled': false}
     ]),
-    // Global default, can be overridden by 'params' in available_games
     'memory_game_default_pairs': 8,
     'seasonal_theme_enabled': false,
+
+    // New default for "Today's Game"
+    'todays_game_config': jsonEncode({
+      "game_id": "default_daily_memory_001",
+      "game_type": "memory_game", // Defaulting to memory_game
+      "display_name": "Default Daily Memory",
+      "description": "A fun memory challenge to start your day!",
+      "config": {
+        "initial_pairs": 7, // Default pairs for the default today's game
+        "icon_theme": "classic"
+        // Add other memory game specific defaults if needed
+      }
+    })
   };
 
   bool _isInitialized = false;
@@ -34,7 +45,7 @@ class RemoteConfigService {
       await _remoteConfig.setDefaults(_defaultConfig);
       await _remoteConfig.setConfigSettings(RemoteConfigSettings(
         fetchTimeout: const Duration(minutes: 1),
-        minimumFetchInterval: const Duration(hours: 1),
+        minimumFetchInterval: const Duration(hours: 1), // For production, consider a longer interval or on app start
       ));
       await _fetchAndActivate();
       _isInitialized = true;
@@ -42,6 +53,7 @@ class RemoteConfigService {
       _remoteConfig.onConfigUpdated.listen((event) async {
         print('Remote config updated, activating...');
         await _remoteConfig.activate();
+        // Consider adding a stream/notifier here if parts of the app need to react live to config updates
       });
     } catch (e) {
       print('Error initializing RemoteConfigService: $e');
@@ -56,25 +68,21 @@ class RemoteConfigService {
       if (activated) {
         print('Remote config activated.');
       } else {
-        print('Remote config not activated.');
+        print('Remote config not activated (already up-to-date or conditions not met).');
       }
     } catch (e) {
       print('Error fetching or activating remote config: $e');
     }
   }
 
+  // --- Getter methods for specific config values ---
+
   List<Map<String, dynamic>> getAvailableGames() {
-    // ... (previous implementation of getAvailableGames - no changes needed here for this step) ...
-    // For brevity, assuming the previous robust implementation is here.
-    // This is just a placeholder to keep the snippet shorter.
-    // The actual robust getter from the previous step should be used.
-     if (!_isInitialized) {
+    // (Implementation from previous step)
+    if (!_isInitialized) {
       print("Warning: Accessing Remote Config before initialization. Returning default games list from local defaults.");
-      try {
-        return (jsonDecode(_defaultConfig['available_games'] as String) as List)
-            .map((item) => item as Map<String, dynamic>)
-            .toList();
-      } catch (e) { return []; }
+      try { return (jsonDecode(_defaultConfig['available_games'] as String) as List).map((item) => item as Map<String, dynamic>).toList(); }
+      catch (e) { print("Error parsing default available_games: $e"); return []; }
     }
     try {
       final String gamesJson = _remoteConfig.getString('available_games');
@@ -84,10 +92,8 @@ class RemoteConfigService {
       }
     } catch (e) {
       print('Error parsing available_games from Remote Config: $e.');
-    }
-    return (jsonDecode(_defaultConfig['available_games'] as String) as List)
-            .map((item) => item as Map<String, dynamic>)
-            .toList();
+    } // Fallback to local default if parsing fails or key not found
+    return (jsonDecode(_defaultConfig['available_games'] as String) as List).map((item) => item as Map<String, dynamic>).toList();
   }
 
   bool isSeasonalThemeEnabled() {
@@ -95,20 +101,41 @@ class RemoteConfigService {
     return _remoteConfig.getBool('seasonal_theme_enabled');
   }
 
-  // Getter for the global default pairs for memory game
   int getGlobalMemoryGameDefaultPairs() {
     if (!_isInitialized) return _defaultConfig['memory_game_default_pairs'] as int;
     return _remoteConfig.getInt('memory_game_default_pairs');
   }
 
-  // Helper to get a specific game's config from the available_games list
-  // This is useful if 'params' are nested within each game entry.
   Map<String, dynamic>? getGameConfig(String gameRoute) {
+    // (Implementation from previous step)
     final games = getAvailableGames();
-    try {
-      return games.firstWhere((game) => game['route'] == gameRoute);
-    } catch (e) {
-      return null; // Game not found
+    try { return games.firstWhere((game) => game['route'] == gameRoute); }
+    catch (e) { return null; }
+  }
+
+  // New getter for Today's Game configuration
+  Map<String, dynamic>? getTodaysGameConfig() {
+    String jsonString;
+    if (!_isInitialized) {
+      print("Warning: Accessing Remote Config before initialization for Today's Game. Returning local default.");
+      jsonString = _defaultConfig['todays_game_config'] as String;
+    } else {
+      jsonString = _remoteConfig.getString('todays_game_config');
+      // If fetched string is empty or not found, fallback to local default string
+      if (jsonString.isEmpty) {
+        print("Today's Game config is empty in Remote Config, falling back to local default.");
+        jsonString = _defaultConfig['todays_game_config'] as String;
+      }
     }
+
+    try {
+      if (jsonString.isNotEmpty) {
+        return jsonDecode(jsonString) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      print("Error parsing Today's Game JSON: $e. JSON String was: '$jsonString'");
+    }
+    // Fallback if everything else fails (e.g. default was also bad, though unlikely here)
+    return null;
   }
 }
