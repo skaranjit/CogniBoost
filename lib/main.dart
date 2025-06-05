@@ -1,19 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
+// Import the RemoteConfigService
+import 'src/services/remote_config_service.dart';
+
 import 'src/models/game_stat_model.dart';
 import 'src/main_menu/main_menu_screen.dart';
 import 'src/settings_screen/settings_screen.dart';
 import 'src/level_selection/level_selection_screen.dart';
 import 'src/games/memory_game/memory_game_screen.dart';
-import 'src/performance_dashboard/performance_dashboard_screen.dart'; // New import
+import 'src/performance_dashboard/performance_dashboard_screen.dart';
 
 const String gameStatsBoxName = 'gameStatsBox';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Initialize Remote Config Service
+  // This needs to be done after Firebase.initializeApp()
+  await RemoteConfigService.instance.initialize();
+
+  // Initialize Hive (if still needed)
   await Hive.initFlutter();
-  Hive.registerAdapter(GameStatModelAdapter());
+  if (!Hive.isAdapterRegistered(GameStatModelAdapter().typeId)) {
+    Hive.registerAdapter(GameStatModelAdapter());
+  }
   await Hive.openBox<GameStatModel>(gameStatsBoxName);
+
   runApp(const CogniBoostApp());
 }
 
@@ -54,7 +74,12 @@ class CogniBoostApp extends StatelessWidget {
         '/settings': (context) => const SettingsScreen(),
         '/levels': (context) => const LevelSelectionScreen(),
         '/memory_game': (context) => const MemoryGameScreen(),
-        '/dashboard': (context) => const PerformanceDashboardScreen(), // New route
+        '/dashboard': (context) => const PerformanceDashboardScreen(),
+        // Define '/coming_soon' or other routes if needed from Remote Config defaults
+        '/coming_soon': (context) => Scaffold(
+          appBar: AppBar(title: const Text('Coming Soon')),
+          body: const Center(child: Text('This game is coming soon!')),
+        ),
       },
     );
   }
