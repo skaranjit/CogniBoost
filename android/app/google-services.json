@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1009115010588",
+    "project_id": "skinnovativelabs",
+    "storage_bucket": "skinnovativelabs.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1009115010588:android:0eb2bc4de5f4b60f0cf1d9",
+        "android_client_info": {
+          "package_name": "com.example.cogni_boost"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDIpDplkmK7VSmuwjrq1lUahfiPQtgurpI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1009115010588:android:731f6fecca2c67170cf1d9",
+        "android_client_info": {
+          "package_name": "com.karanjit.group.cogniBoost"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDIpDplkmK7VSmuwjrq1lUahfiPQtgurpI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
